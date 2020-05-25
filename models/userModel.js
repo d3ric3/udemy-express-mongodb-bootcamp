@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
     minlength: 8,
     select: false
   },
-  confirmPassword: {
+  passwordConfirm: {
     type: String,
     required: [true, 'Please confirm your password'],
     validate: {
@@ -49,7 +49,15 @@ userSchema.pre('save', async function(next) {
   // Hash the password with the cost of 12
   this.password = await bcrypt.hash(this.password, 12);
 
-  this.confirmPassword = undefined;
+  this.passwordConfirm = undefined;
+  next();
+});
+
+userSchema.pre('save', function(next) {
+  if (!this.isModified('password') || this.isNew) return next();
+
+  // To make sure passwordChangedAt is earlier than JWT token issued date
+  this.passwordChangedAt = Date.now() - 1000;
   next();
 });
 
